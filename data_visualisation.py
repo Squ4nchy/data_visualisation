@@ -26,68 +26,80 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 
-iris = pd.read_csv('data/iris.csv', names=['sepal_length', 'sepal_width', 'petal_length', 'petal_width', 'class'])
-iris.head()
+covid_data = pd.read_csv('data/covid_data.csv', index_col=0)
 
-wine_reviews = pd.read_csv('data/winemag-data-130k-v2.csv', index_col=0)
-wine_reviews.head()
+chess_games = pd.read_csv('data/games.csv', index_col=0)
+
+covid_curr = covid_data[(covid_data['date'] == '2020-05-19') & (~covid_data['continent'].isna()) & (covid_data['new_deaths_per_million'] > 0)]
 
 # +
 # create a figure and axis
 fig, ax = plt.subplots()
+fig.set_size_inches(15,10)
 
-# scatter the sepal_length against the sepal_width
-ax.scatter(iris['sepal_length'], iris['sepal_width'])
+# scatter total_cases_per_million with total_deaths_per_million
+ax.scatter(covid_curr['new_cases_per_million'], covid_curr['new_deaths_per_million'])
 
 # set a title and labels
-ax.set_title('Iris Dataset')
-ax.set_xlabel('sepal_length')
-ax.set_ylabel('sepal_width')
+ax.set_title('Covid Dataset', )
+ax.set_xlabel('New Cases (per million)')
+ax.set_ylabel('New Deaths (per million)')
 
 # +
-# create color dictionary
-colours = {'Iris-setosa':'r', 'Iris-versicolor':'g', 'Iris-virginica':'b'}
-
 # create a figure and axis
 fig, ax = plt.subplots()
+fig.set_size_inches(15,10)
 
 # plot each data-point
-for i in range(len(iris['sepal_length'])):
-    ax.scatter(iris['sepal_length'][i], iris['sepal_width'][i],color=colours[iris['class'][i]])
+# with a randomly generated RGB colour
+for i in range(len(covid_curr['location'])):
+    ax.scatter(covid_curr['new_cases_per_million'][i], covid_curr['new_deaths_per_million'][i], color=np.random.rand(3,).round(1))
     
 # set a title and labels
-ax.set_title('Iris Dataset')
-ax.set_xlabel('sepal_length')
-ax.set_ylabel('sepal_width')
+ax.set_title('Covid Dataset')
+ax.set_xlabel('New Cases (per million)')
+ax.set_ylabel('New Deaths (per million)')
+# -
+
+covid_to_date = covid_data[(covid_data['location'] == 'United Kingdom') & (~covid_data['continent'].isna()) & (covid_data['new_deaths_per_million'] > 0)]
 
 # +
 # get columns to plot
-columns = iris.columns.drop(['class'])
+columns = ['new_cases_per_million', 'new_deaths_per_million', 'icu_patients_per_million', 'hosp_patients_per_million']
 
 # create x data
-x_data = range(0, iris.shape[0])
+x_data = covid_to_date['date'].values[0::10]
 
 # create figure and axis
 fig, ax = plt.subplots()
+fig.set_size_inches(20,15)
 
 # plot each column
 for column in columns:
-    ax.plot(x_data, iris[column], label=column)
+    ax.plot(x_data, covid_to_date[column][0::10], label=column)
     
 # set title and legend
-ax.set_title('Iris Dataset')
-ax.legend()
+plt.xticks(rotation=-45, ha='left')
+ax.set_title('COVID: Deaths, Cases, ICU and Hospital Admissions')
+ax.legend(bbox_to_anchor=(1.05,1), loc='upper left')
+# for tick in ax.xaxis.get_major_ticks()[1::2]:
+#     tick.set_pad(15)
+# -
+
+high_rated = chess_games[(chess_games['rated'] == True) & (chess_games['black_rating'] > 2000) & (chess_games['white_rating'] > 2000)]
 
 # +
 # create figure and axis
 fig, ax = plt.subplots()
+fig.set_size_inches(10,8)
+
 
 # plot histogram
-ax.hist(wine_reviews['points'])
+ax.hist(high_rated['turns'])
 
 # set title and labels
-ax.set_title('Wine Review Scores')
-ax.set_xlabel('Points')
+ax.set_title('High Rated Chess Games (ELO > 2000)')
+ax.set_xlabel('Total Turns per Game')
 ax.set_ylabel('Frequency')
 # +
 # create a figure and axis
