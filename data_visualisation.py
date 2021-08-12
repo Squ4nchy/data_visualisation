@@ -13,10 +13,7 @@
 #     name: python3
 # ---
 
-# +
-# Make matplotlib images appear inline in code
-# %matplotlib inline
-
+# + tags=[]
 # Reduce loading of auto fill for jupyter lab
 # %config Completer.use_jedi = False
 # -
@@ -26,53 +23,78 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 
+# + tags=[]
+# Matplotlib settings
+
+# Make matplotlib images appear inline in code
+# %matplotlib inline
+
+# Lettering format
+plt.rcParams.update({'font.weight': 'bold'})
+plt.rcParams.update({'font.size': 16})
+
+
+# -
+
+def figure_elements(size_x, size_y,
+                    title=None, x_label=None, y_label=None):
+    
+    fig, ax = plt.subplots()
+    
+    # Set figure size
+    fig.set_size_inches(size_x, size_y)
+    
+    # set a title and labels
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    
+    return(fig, ax)
+
+
 covid_data = pd.read_csv('data/covid_data.csv', index_col=0)
 
 chess_games = pd.read_csv('data/games.csv', index_col=0)
 
-covid_curr = covid_data[(covid_data['date'] == '2020-05-19') & (~covid_data['continent'].isna()) & (covid_data['new_deaths_per_million'] > 0)]
+covid_curr = covid_data[(covid_data['date'] == '2020-05-19') &
+                        (~covid_data['continent'].isna()) &
+                        (covid_data['new_deaths_per_million'] > 0)]
 
 # +
-# create a figure and axis
-fig, ax = plt.subplots()
-fig.set_size_inches(15,10)
+fig, ax = figure_elements(15, 10, 'COVID Dataset', 
+                          'New Cases (per Million)', 
+                          'New Deaths (per Million)')
 
-# scatter total_cases_per_million with total_deaths_per_million
 ax.scatter(covid_curr['new_cases_per_million'], covid_curr['new_deaths_per_million'])
 
-# set a title and labels
-ax.set_title('Covid Dataset', )
-ax.set_xlabel('New Cases (per million)')
-ax.set_ylabel('New Deaths (per million)')
-
 # +
-# create a figure and axis
-fig, ax = plt.subplots()
-fig.set_size_inches(15,10)
+fig, ax = figure_elements(15, 10, 'COVID Dataset', 
+                          'New Cases (per Million)', 
+                          'New Deaths (per Million)')
 
 # plot each data-point
 # with a randomly generated RGB colour
 for i in range(len(covid_curr['location'])):
-    ax.scatter(covid_curr['new_cases_per_million'][i], covid_curr['new_deaths_per_million'][i], color=np.random.rand(3,).round(1))
-    
-# set a title and labels
-ax.set_title('Covid Dataset')
-ax.set_xlabel('New Cases (per million)')
-ax.set_ylabel('New Deaths (per million)')
+    ax.scatter(covid_curr['new_cases_per_million'][i],
+               covid_curr['new_deaths_per_million'][i],
+               color=np.random.rand(3,).round(1))
 # -
 
-covid_to_date = covid_data[(covid_data['location'] == 'United Kingdom') & (~covid_data['continent'].isna()) & (covid_data['new_deaths_per_million'] > 0)]
+covid_to_date = covid_data[(covid_data['location'] == 'United Kingdom') &
+                           (~covid_data['continent'].isna()) &
+                           (covid_data['new_deaths_per_million'] > 0)]
 
 # +
 # get columns to plot
-columns = ['new_cases_per_million', 'new_deaths_per_million', 'icu_patients_per_million', 'hosp_patients_per_million']
+columns = ['new_cases_per_million',
+           'new_deaths_per_million',
+           'icu_patients_per_million',
+           'hosp_patients_per_million']
 
 # create x data
 x_data = covid_to_date['date'].values[0::10]
 
-# create figure and axis
-fig, ax = plt.subplots()
-fig.set_size_inches(20,15)
+fig, ax = figure_elements(20, 15, 'COVID: Deaths, Cases, ICU and Hospital Admissions')
 
 # plot each column
 for column in columns:
@@ -80,45 +102,42 @@ for column in columns:
     
 # set title and legend
 plt.xticks(rotation=-45, ha='left')
-ax.set_title('COVID: Deaths, Cases, ICU and Hospital Admissions')
 ax.legend(bbox_to_anchor=(1.05,1), loc='upper left')
-# for tick in ax.xaxis.get_major_ticks()[1::2]:
-#     tick.set_pad(15)
 # -
 
-high_rated = chess_games[(chess_games['rated'] == True) & (chess_games['black_rating'] > 2000) & (chess_games['white_rating'] > 2000)]
+high_rated = chess_games[(chess_games['rated'] == True) &
+                         (chess_games['black_rating'] > 2000) &
+                         (chess_games['white_rating'] > 2000)]
 
 # +
-# create figure and axis
-fig, ax = plt.subplots()
-fig.set_size_inches(10,8)
-
+fig, ax = figure_elements(10, 8,
+                         'High Rated Chess Games (ELO > 2000)',
+                         'Total Turns per Game',
+                         'Frequency')
 
 # plot histogram
 ax.hist(high_rated['turns'])
+# -
+high_rated.columns
 
-# set title and labels
-ax.set_title('High Rated Chess Games (ELO > 2000)')
-ax.set_xlabel('Total Turns per Game')
-ax.set_ylabel('Frequency')
+openings = high_rated['opening_name'].value_counts()
+top_openings = openings[openings > 4].sort_index()
+
 # +
-# create a figure and axis
-fig, ax = plt.subplots()
-
-# count the occurrence of each class
-data = wine_reviews['points'].value_counts()
+fig, ax = figure_elements(20, 15, 'High Rated ELO Games',
+                          'Opening Name',
+                          f'Times Play in {len(high_rated)} Games')
 
 # get x and y data
-points = data.index
-frequency = data.values
+points = top_openings.index
+frequency = top_openings.values
 
 # create bar chart
 ax.bar(points, frequency)
 
-# set title and labels
-ax.set_title('Wine Review Scores')
-ax.set_xlabel('Points')
-ax.set_ylabel('Frequency')
+ax.set_xticklabels(points, rotation=-45, ha='left')
+
+plt.show()
 # -
 
 
@@ -189,5 +208,25 @@ from pandas.plotting import scatter_matrix
 fig, ax = plt.subplots(figsize=(12,12))
 scatter_matrix(iris, alpha=1, ax=ax)
 # -
+covid_ons = pd.read_excel('./data/datadownload.xlsx')
 
 
+covid_ons.dropna(how='all', inplace=True)
+covid_ons.dropna(how='any', axis=0, inplace=True)
+
+covid_ons
+
+# +
+fig, ax = figure_elements(15, 10)
+
+cov19_deaths = covid_ons[covid_ons['Year'] == 2021]['Deaths due to COVID-19']
+flu_deaths = covid_ons[covid_ons['Year'] == 2021]['Deaths due to Influenza and Pneumonia']
+week_no = covid_ons[covid_ons['Year'] == 2021]['Week no.']
+
+values = [cov19_deaths, flu_deaths]
+
+for i in range(len(values)):
+    ax.plot(week_no, values[i])
+
+plt.xticks(rotation=-45, ha='left')
+ax.legend(['covid deaths', 'flu deaths'])
