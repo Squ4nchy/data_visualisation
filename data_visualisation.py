@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.11.0
+#       jupytext_version: 1.6.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -29,11 +29,22 @@ import seaborn as sns
 # Make matplotlib images appear inline in code
 # %matplotlib inline
 
+d ={
+    'axes.titlesize': 22,
+    'axes.titleweight': 550,
+    'axes.titlepad': 20,
+    'axes.labelsize': 16,
+    'axes.labelweight': 550,
+    'axes.labelpad': 20,
+    'xtick.labelsize': 14,
+    'ytick.labelsize': 14
+}
+
 # Lettering format
-plt.rcParams.update({'font.weight': 'bold'})
-plt.rcParams.update({'font.size': 16})
-
-
+plt.rcParams.update(d)
+# plt.rcParams.update()
+# plt.rcParams.update()
+# plt.rcParams.update()
 # -
 
 def figure_elements(size_x, size_y,
@@ -111,7 +122,7 @@ high_rated = chess_games[(chess_games['rated'] == True) &
 
 # +
 fig, ax = figure_elements(10, 8,
-                         'High Rated Chess Games (ELO > 2000)',
+                         'High ELO Games: Total Turns to Resolution',
                          'Total Turns per Game',
                          'Frequency')
 
@@ -124,24 +135,37 @@ openings = high_rated['opening_name'].value_counts()
 top_openings = openings[openings > 4].sort_index()
 
 # +
-fig, ax = figure_elements(20, 15, 'High Rated ELO Games',
+fig, ax = figure_elements(16, 12, 'High ELO Games: Most Used Openings',
                           'Opening Name',
-                          f'Times Play in {len(high_rated)} Games')
+                          f'Times Opening Played {len(high_rated)} Games')
 
 # get x and y data
 points = top_openings.index
 frequency = top_openings.values
 
 # create bar chart
-ax.bar(points, frequency)
+# ax.bar(points, frequency)
 
-ax.set_xticklabels(points, rotation=-45, ha='left')
 
+
+for i in range(len(points)):
+    ax.bar(points[i],
+           frequency[i],
+           color=np.random.rand(3,).round(1),
+           edgecolor='black'
+          )
+    
+ax.set_xticklabels([])
+
+plt.legend(points, bbox_to_anchor=(1.04, 1), loc='upper left')
+    
 plt.show()
 # -
 
 
-iris.plot.scatter(x='sepal_length', y='sepal_width', title='Iris Dataset')
+high_rated.columns
+
+high_rated.plot.scatter(x='black_rating', y='white_rating', title='High ELO: Rating Disparity')
 
 iris.drop(['class'], axis=1).plot.line(title='Iris Dataset')
 
