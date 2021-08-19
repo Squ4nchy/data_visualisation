@@ -40,11 +40,9 @@ d ={
     'ytick.labelsize': 14
 }
 
-# Lettering format
 plt.rcParams.update(d)
-# plt.rcParams.update()
-# plt.rcParams.update()
-# plt.rcParams.update()
+
+
 # -
 
 def figure_elements(size_x, size_y,
@@ -137,7 +135,7 @@ top_openings = openings[openings > 4].sort_index()
 # +
 fig, ax = figure_elements(16, 12, 'High ELO Games: Most Used Openings',
                           'Opening Name',
-                          f'Times Opening Played {len(high_rated)} Games')
+                          f'Times Opening Played ({len(high_rated)} Games)')
 
 # get x and y data
 points = top_openings.index
@@ -156,18 +154,18 @@ for i in range(len(points)):
           )
     
 ax.set_xticklabels([])
-
+ax.set_ylim(bottom=4)
 plt.legend(points, bbox_to_anchor=(1.04, 1), loc='upper left')
     
 plt.show()
 # -
 
 
-high_rated.columns
+covid_to_date.columns
 
 high_rated.plot.scatter(x='black_rating', y='white_rating', title='High ELO: Rating Disparity')
 
-iris.drop(['class'], axis=1).plot.line(title='Iris Dataset')
+covid_to_date.drop(['continent'], axis=1).plot.line(title='Iris Dataset')
 
 wine_reviews['points'].plot.hist()
 
