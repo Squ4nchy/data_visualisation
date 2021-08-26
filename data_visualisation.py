@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.11.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -141,11 +141,6 @@ fig, ax = figure_elements(16, 12, 'High ELO Games: Most Used Openings',
 points = top_openings.index
 frequency = top_openings.values
 
-# create bar chart
-# ax.bar(points, frequency)
-
-
-
 for i in range(len(points)):
     ax.bar(points[i],
            frequency[i],
@@ -163,15 +158,28 @@ plt.show()
 
 covid_to_date.columns
 
+# + tags=[]
 high_rated.plot.scatter(x='black_rating', y='white_rating', title='High ELO: Rating Disparity')
+# -
 
-covid_to_date.drop(['continent'], axis=1).plot.line(title='Iris Dataset')
+cov_columns = covid_to_date.columns
+cov_columns = [x for x in columns if x not in ['total_deaths_per_million', 'total_cases_per_million', 'date']]
 
-wine_reviews['points'].plot.hist()
+covid_to_date.drop(cov_columns, axis=1).plot.line(x='date', title='COVID-19: UK Deaths and Cases', rot=-45)
 
-iris.plot.hist(subplots=True, layout=(2,2), figsize=(10,10), bins=20)
+high_rated['turns'].plot.hist(title='High ELO Games: Turns Per Game')
 
-wine_reviews['points'].value_counts().sort_index().plot.bar()
+chess_columns = high_rated.columns
+chess_columns = [x for x in chess_columns if x not in ['turns', 'black_rating', 'white_rating']]
+
+# How to not share x-axis?
+high_rated.drop(chess_columns, axis=1).plot.hist(subplots=True, layout=(3,1), figsize=(10,10), bins=50)
+
+not_top_openings = [x for x in high_rated['opening_name'].values if x not in top_openings]
+
+high_rated['opening_name']
+
+high_rated['opening_name'].drop(not_top_openings).value_counts().sort_index().plot.bar()
 
 wine_reviews['points'].value_counts().sort_index().plot.barh()
 
