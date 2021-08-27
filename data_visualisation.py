@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.11.0
+#       jupytext_version: 1.6.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -153,43 +153,42 @@ ax.set_ylim(bottom=4)
 plt.legend(points, bbox_to_anchor=(1.04, 1), loc='upper left')
     
 plt.show()
-# -
 
-
-covid_to_date.columns
 
 # + tags=[]
 high_rated.plot.scatter(x='black_rating', y='white_rating', title='High ELO: Rating Disparity')
 # -
 
 cov_columns = covid_to_date.columns
-cov_columns = [x for x in columns if x not in ['total_deaths_per_million', 'total_cases_per_million', 'date']]
+cov_columns = [x for x in cov_columns if x not in ['total_deaths_per_million', 'total_cases_per_million', 'date']]
 
 covid_to_date.drop(cov_columns, axis=1).plot.line(x='date', title='COVID-19: UK Deaths and Cases', rot=-45)
 
 high_rated['turns'].plot.hist(title='High ELO Games: Turns Per Game')
 
 chess_columns = high_rated.columns
-chess_columns = [x for x in chess_columns if x not in ['turns', 'black_rating', 'white_rating']]
+chess_columns = [x for x in chess_columns if x not in ['black_rating', 'white_rating']]
 
 # How to not share x-axis?
 high_rated.drop(chess_columns, axis=1).plot.hist(subplots=True, layout=(3,1), figsize=(10,10), bins=50)
 
-not_top_openings = [x for x in high_rated['opening_name'].values if x not in top_openings]
+high_rated['opening_name'].value_counts()[:10].sort_index().plot.bar(title='High ELO Games: Top Openings')
 
-high_rated['opening_name']
+high_rated['opening_name'].value_counts()[:10].sort_index().plot.barh(title='High ELO Games: Top Openings')
 
-high_rated['opening_name'].drop(not_top_openings).value_counts().sort_index().plot.bar()
+high_rated.groupby('opening_name').turns.mean().sort_values(ascending=False)[:10].plot.bar()
 
-wine_reviews['points'].value_counts().sort_index().plot.barh()
+covid_to_date.columns
 
-wine_reviews.groupby('country').price.mean().sort_values(ascending=False)[:5].plot.bar()
+sns.scatterplot(x='new_cases_per_million', y='new_deaths_per_million', data=covid_curr)
 
-sns.scatterplot(x='sepal_length', y='sepal_width', data=iris)
+sns.scatterplot(x='new_cases_per_million', y='new_deaths_per_million', data=covid_curr, hue='continent')
 
-sns.scatterplot(x='sepal_length', y='sepal_width', hue='class', data=iris)
+test = covid_to_date.pivot('continent', 'date', ['new_deaths_per_million', 'new_cases_per_million'])
 
+# + jupyter={"outputs_hidden": true}
 sns.lineplot(data=iris.drop(['class'], axis=1))
+# -
 
 sns.histplot(wine_reviews['points'], bins=10, kde=False)
 
