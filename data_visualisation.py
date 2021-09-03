@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import seaborn as sns
+import re
 
 # + tags=[]
 # Matplotlib settings
@@ -29,6 +30,7 @@ import seaborn as sns
 # Make matplotlib images appear inline in code
 # %matplotlib inline
 
+# Global plot settings
 d ={
     'axes.titlesize': 22,
     'axes.titleweight': 550,
@@ -40,61 +42,86 @@ d ={
     'ytick.labelsize': 14
 }
 
+# Update settings with settings dictionary
 plt.rcParams.update(d)
 
 
 # -
 
-def figure_elements(size_x, size_y,
-                    title=None, x_label=None, y_label=None):
+def figure_elements(x_size, y_size,
+                    title=None, x_label=None,
+                    y_label=None, grid_on=False
+                   ):
     
     fig, ax = plt.subplots()
     
     # Set figure size
-    fig.set_size_inches(size_x, size_y)
+    fig.set_size_inches(x_size, y_size)
     
     # set a title and labels
     ax.set_title(title)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     
+    # Set a dashed grid background for plots
+    if grid_on is True:
+        ax.grid(color='gray', linestyle='dashed')
+        ax.set_axisbelow(True)
+    
     return(fig, ax)
 
 
+# Data sets
 covid_data = pd.read_csv('data/covid_data.csv', index_col=0)
-
 chess_games = pd.read_csv('data/games.csv', index_col=0)
 
+# Filter the covid_data data set by date, existance of continent field
+# and ignore rows that have negative deaths recorded
 covid_curr = covid_data[(covid_data['date'] == '2020-05-19') &
                         (~covid_data['continent'].isna()) &
                         (covid_data['new_deaths_per_million'] > 0)]
 
 # +
-fig, ax = figure_elements(15, 10, 'COVID Dataset', 
+fig, ax = figure_elements(15, 10, 
+                          'COVID-19: Cases Vs Deaths', 
                           'New Cases (per Million)', 
-                          'New Deaths (per Million)')
+                          'New Deaths (per Million)',
+                          grid_on=True
+                         )
 
 ax.scatter(covid_curr['new_cases_per_million'], covid_curr['new_deaths_per_million'])
 
 # +
-fig, ax = figure_elements(15, 10, 'COVID Dataset', 
+fig, ax = figure_elements(15, 10, 
+                          'COVID -19: Cases Vs Deaths', 
                           'New Cases (per Million)', 
-                          'New Deaths (per Million)')
+                          'New Deaths (per Million)',
+                          grid_on=True
+                         )
 
-# plot each data-point
-# with a randomly generated RGB colour
-for i in range(len(covid_curr['location'])):
+df_len = len(covid_curr)
+
+# List of random, non-repeating, RGB colours
+colour_list = np.random.rand(df_len,3).round(1)
+
+# plot each data-point with a randomly generated RGB colour
+for i in range(df_len):
     ax.scatter(covid_curr['new_cases_per_million'][i],
                covid_curr['new_deaths_per_million'][i],
-               color=np.random.rand(3,).round(1))
+               color=colour_list[i],
+               alpha=0.6,
+               edgecolors='black'
+              )
 # -
 
+# Only covid data for UK, drop no continent rows, and also any negative
+# deaths
 covid_to_date = covid_data[(covid_data['location'] == 'United Kingdom') &
                            (~covid_data['continent'].isna()) &
                            (covid_data['new_deaths_per_million'] > 0)]
 
 # +
-# get columns to plot
+# columns to plot
 columns = ['new_cases_per_million',
            'new_deaths_per_million',
            'icu_patients_per_million',
@@ -103,17 +130,21 @@ columns = ['new_cases_per_million',
 # create x data
 x_data = covid_to_date['date'].values[0::10]
 
-fig, ax = figure_elements(20, 15, 'COVID: Deaths, Cases, ICU and Hospital Admissions')
+fig, ax = figure_elements(20, 15, 'COVID-19: Deaths, Cases, ICU Patients, and Hospital Admissions')
 
 # plot each column
 for column in columns:
     ax.plot(x_data, covid_to_date[column][0::10], label=column)
-    
+
+# ax.set_xlim((0, len(x_data)-1))
+ax.set_ylim(bottom=0)
+
 # set title and legend
-plt.xticks(rotation=-45, ha='left')
+plt.xticks(rotation=45, ha='right')
 ax.legend(bbox_to_anchor=(1.05,1), loc='upper left')
 # -
 
+# Filter to get only high rated games
 high_rated = chess_games[(chess_games['rated'] == True) &
                          (chess_games['black_rating'] > 2000) &
                          (chess_games['white_rating'] > 2000)]
@@ -122,35 +153,43 @@ high_rated = chess_games[(chess_games['rated'] == True) &
 fig, ax = figure_elements(10, 8,
                          'High ELO Games: Total Turns to Resolution',
                          'Total Turns per Game',
-                         'Frequency')
+                         'Frequency'
+                         )
 
 # plot histogram
 ax.hist(high_rated['turns'])
 # -
-high_rated.columns
-
+# Most played openings in the highest rated games
 openings = high_rated['opening_name'].value_counts()
 top_openings = openings[openings > 4].sort_index()
 
 # +
-fig, ax = figure_elements(16, 12, 'High ELO Games: Most Used Openings',
+fig, ax = figure_elements(16, 12, 
+                          f'High ELO Games: Most Used Openings ({len(high_rated)} Games)',
                           'Opening Name',
-                          f'Times Opening Played ({len(high_rated)} Games)')
+                          'Times Opening Played'
+                         )
 
 # get x and y data
 points = top_openings.index
 frequency = top_openings.values
 
+# List of random, non-repeating, RGB colours
+colour_list = np.random.rand(df_len,3).round(1)
+
 for i in range(len(points)):
     ax.bar(points[i],
            frequency[i],
-           color=np.random.rand(3,).round(1),
+           color=colour_list[i],
            edgecolor='black'
           )
     
 ax.set_xticklabels([])
 ax.set_ylim(bottom=4)
+
+# Move legend outside of the plot
 plt.legend(points, bbox_to_anchor=(1.04, 1), loc='upper left')
+plt.tight_layout()
     
 plt.show()
 
@@ -162,47 +201,100 @@ high_rated.plot.scatter(x='black_rating', y='white_rating', title='High ELO: Rat
 cov_columns = covid_to_date.columns
 cov_columns = [x for x in cov_columns if x not in ['total_deaths_per_million', 'total_cases_per_million', 'date']]
 
-covid_to_date.drop(cov_columns, axis=1).plot.line(x='date', title='COVID-19: UK Deaths and Cases', rot=-45)
+fig, ax = figure_elements(15, 10)
+covid_to_date.drop(cov_columns, axis=1).plot.line(ax=ax, x='date', title='COVID-19: UK Deaths and Cases', rot=-45)
 
 high_rated['turns'].plot.hist(title='High ELO Games: Turns Per Game')
 
 chess_columns = high_rated.columns
 chess_columns = [x for x in chess_columns if x not in ['black_rating', 'white_rating']]
 
-# How to not share x-axis?
-high_rated.drop(chess_columns, axis=1).plot.hist(subplots=True, layout=(3,1), figsize=(10,10), bins=50)
+high_rated.drop(chess_columns, axis=1).plot.hist(subplots=True, layout=(3,1), figsize=(10,10), bins=50, sharey=True)
 
+fig, ax = figure_elements(15,10)
 high_rated['opening_name'].value_counts()[:10].sort_index().plot.bar(title='High ELO Games: Top Openings')
+ax.set_ylim(6)
 
+fig, ax = figure_elements(15,10)
 high_rated['opening_name'].value_counts()[:10].sort_index().plot.barh(title='High ELO Games: Top Openings')
+ax.set_xlim(6)
 
-high_rated.groupby('opening_name').turns.mean().sort_values(ascending=False)[:10].plot.bar()
-
-covid_to_date.columns
+fig, ax = figure_elements(15,10)
+high_rated.groupby('opening_name').turns.mean().sort_values(ascending=False)[:10].sort_index().plot.bar()
+ax.set_ylim(140)
 
 sns.scatterplot(x='new_cases_per_million', y='new_deaths_per_million', data=covid_curr)
 
 sns.scatterplot(x='new_cases_per_million', y='new_deaths_per_million', data=covid_curr, hue='continent')
 
-test = covid_to_date.pivot('continent', 'date', ['new_deaths_per_million', 'new_cases_per_million'])
+covid_pivot = covid_to_date.pivot('date', 'location', ['new_deaths_per_million', 'new_cases_per_million'])
 
-# + jupyter={"outputs_hidden": true}
-sns.lineplot(data=iris.drop(['class'], axis=1))
+# +
+fig, ax = figure_elements(20,10)
+sns.lineplot(ax=ax, data=covid_pivot[0::10])
+ax.set_xticklabels(covid_to_date['date'], rotation=-45, ha='left')
+
+plt.show()
 # -
 
-sns.histplot(wine_reviews['points'], bins=10, kde=False)
+fig, ax = figure_elements(15,10, 'High ELO Games: Turns per Game')
+sns.histplot(high_rated['turns'], bins=10, kde=False, ax=ax)
 
-sns.histplot(wine_reviews['points'], bins=10, kde=True)
+# +
+fig, ax = figure_elements(15,10,
+                          'High ELO Games: Turns per Game'
+                         )
 
-sns.countplot(x=wine_reviews['points'])
+sns.histplot(high_rated['turns'], bins=10, kde=True, ax=ax)
 
-df = wine_reviews[(wine_reviews['points']>=95) & (wine_reviews['price']<1000)]
-sns.boxplot(x='points', y='price', data=df)
+
+# -
+
+# Reduce opening variant names to most common root.
+def opening_root(x):
+    m = re.match(r'(.+?):|(.+?).\|', x)
+    if m is not None:
+        try:
+            return m.group(1)
+        except Exception as e:
+            return m.group(2)
+
+
+high_rated['re_openings'] = high_rated['opening_name'].apply(lambda x: opening_root(x))
+
+# +
+fig, ax = figure_elements(15,10,
+                          'High ELO Games: Opening Frequency',
+                          grid_on=True
+                         )
+sns.countplot(x=high_rated['re_openings'].sort_values(), ax=ax)
+ax.set_xticklabels(ax.get_xticklabels(), rotation=-45, ha='left', rotation_mode='anchor')
+
+ax.set_xlabel('Opening Name')
+ax.set_ylabel('Number of Games')
+
+plt.show()
+
+# +
+df = covid_data[(covid_data['continent'] == 'Europe') &
+                (covid_data['new_deaths_smoothed_per_million'] > 0)
+               ]
+
+fig, ax = figure_elements(30, 20)
+
+sns.boxplot(x='location', y='new_deaths_smoothed_per_million', data=df, ax=ax, )
+
+ax.set_title('COVID-19: New Deaths per European Country')
+ax.set_ylabel('Deaths per Million (Smoothed)')
+ax.set_xlabel('Country')
+ax.set_xticklabels(ax.get_xticklabels(), rotation=-45, rotation_mode='anchor', ha='left')
+
+plt.show()
 
 # +
 # get correlation matrix
-corr = iris.corr()
-fig, ax = plt.subplots()
+corr = chess_games.drop(['rated', 'last_move_at'], axis=1).corr()
+fig, ax = figure_elements(15,15)
 
 # create heatmap
 im = ax.imshow(corr.values)
@@ -223,39 +315,9 @@ for i in range(len(corr.columns)):
         text = ax.text(j, i, np.around(corr.iloc[i, j], decimals=2),
                        ha="center", va="center", color="black")
 # -
-sns.heatmap(iris.corr(), annot=True)
+sns.heatmap(chess_games.drop(['rated', 'last_move_at'], axis=1).corr(), annot=True)
 
 
-g = sns.FacetGrid(iris, col='class')
-g = g.map(sns.kdeplot, 'sepal_length')
-
-sns.pairplot(iris)
-
-# +
-from pandas.plotting import scatter_matrix
-
-fig, ax = plt.subplots(figsize=(12,12))
-scatter_matrix(iris, alpha=1, ax=ax)
-# -
-covid_ons = pd.read_excel('./data/datadownload.xlsx')
-
-
-covid_ons.dropna(how='all', inplace=True)
-covid_ons.dropna(how='any', axis=0, inplace=True)
-
-covid_ons
-
-# +
-fig, ax = figure_elements(15, 10)
-
-cov19_deaths = covid_ons[covid_ons['Year'] == 2021]['Deaths due to COVID-19']
-flu_deaths = covid_ons[covid_ons['Year'] == 2021]['Deaths due to Influenza and Pneumonia']
-week_no = covid_ons[covid_ons['Year'] == 2021]['Week no.']
-
-values = [cov19_deaths, flu_deaths]
-
-for i in range(len(values)):
-    ax.plot(week_no, values[i])
-
-plt.xticks(rotation=-45, ha='left')
-ax.legend(['covid deaths', 'flu deaths'])
+df = chess_games[chess_games['rated'] == True]
+df.reset_index(inplace=True)
+sns.pairplot(df.drop(['rated', 'last_move_at', 'id', 'created_at'], axis=1))
