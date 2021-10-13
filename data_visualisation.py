@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.11.0
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -23,6 +23,9 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import re
+from pandasql import sqldf
+
+pysqldf = lambda q: sqldf(q, globals())
 
 # + tags=[]
 # Matplotlib settings
@@ -75,11 +78,18 @@ def figure_elements(x_size, y_size,
 covid_data = pd.read_csv('data/covid_data.csv', index_col=0)
 chess_games = pd.read_csv('data/games.csv', index_col=0)
 
+# +
 # Filter the covid_data data set by date, existance of continent field
 # and ignore rows that have negative deaths recorded
-covid_curr = covid_data[(covid_data['date'] == '2020-05-19') &
-                        (~covid_data['continent'].isna()) &
-                        (covid_data['new_deaths_per_million'] > 0)]
+q = '''
+SELECT new_cases_per_million, new_deaths_per_million 
+FROM covid_data 
+WHERE date='2020-05-19' 
+    AND new_deaths_per_million>0 
+    AND new_cases_per_million>0;
+    '''
+
+covid_curr = pysqldf(q)
 
 # +
 fig, ax = figure_elements(15, 10, 
@@ -116,9 +126,18 @@ for i in range(df_len):
 
 # Only covid data for UK, drop no continent rows, and also any negative
 # deaths
-covid_to_date = covid_data[(covid_data['location'] == 'United Kingdom') &
-                           (~covid_data['continent'].isna()) &
-                           (covid_data['new_deaths_per_million'] > 0)]
+q = '''
+SELECT date,
+           new_cases_per_million,
+           new_deaths_per_million,
+           icu_patients_per_million,
+           hosp_patients_per_million
+FROM covid_data
+WHERE location IS 'United Kingdom'
+    AND continent IS NOT NULL
+    AND new_deaths_per_million > 0;
+'''
+covid_to_date = pysqldf(q)
 
 # +
 # columns to plot
@@ -142,12 +161,17 @@ ax.set_ylim(bottom=0)
 # set title and legend
 plt.xticks(rotation=45, ha='right')
 ax.legend(bbox_to_anchor=(1.05,1), loc='upper left')
-# -
 
+# +
 # Filter to get only high rated games
-high_rated = chess_games[(chess_games['rated'] == True) &
-                         (chess_games['black_rating'] > 2000) &
-                         (chess_games['white_rating'] > 2000)]
+q = '''
+SELECT *
+FROM chess_games
+WHERE black_rating >= 2000
+    AND white_rating >= 2000
+'''
+
+high_rated = pysqldf(q)
 
 # +
 fig, ax = figure_elements(10, 8,
@@ -196,20 +220,32 @@ plt.show()
 
 # + tags=[]
 high_rated.plot.scatter(x='black_rating', y='white_rating', title='High ELO: Rating Disparity')
+
+# + tags=[]
+# Total deaths and cases.
+q = '''
+SELECT date, total_deaths_per_million, total_cases_per_million
+FROM covid_data
+WHERE location IS 'United Kingdom'
+    AND continent IS NOT NULL
+    AND total_deaths_per_million > 0 
+'''
+
+covid_totals = pysqldf(q)
 # -
 
-cov_columns = covid_to_date.columns
-cov_columns = [x for x in cov_columns if x not in ['total_deaths_per_million', 'total_cases_per_million', 'date']]
-
 fig, ax = figure_elements(15, 10)
-covid_to_date.drop(cov_columns, axis=1).plot.line(ax=ax, x='date', title='COVID-19: UK Deaths and Cases', rot=-45)
+covid_totals.plot.line(ax=ax, x='date', title='COVID-19: UK Deaths and Cases', rot=-45)
 
 high_rated['turns'].plot.hist(title='High ELO Games: Turns Per Game')
 
-chess_columns = high_rated.columns
-chess_columns = [x for x in chess_columns if x not in ['black_rating', 'white_rating']]
+q = '''
+SELECT black_rating, white_rating
+FROM high_rated
+'''
+rating_freq = pysqldf(q)
 
-high_rated.drop(chess_columns, axis=1).plot.hist(subplots=True, layout=(3,1), figsize=(10,10), bins=50, sharey=True)
+rating_freq.plot.hist(subplots=True, layout=(3,1), figsize=(10,10), bins=50, sharey=True)
 
 fig, ax = figure_elements(15,10)
 high_rated['opening_name'].value_counts()[:10].sort_index().plot.bar(title='High ELO Games: Top Openings')
@@ -225,9 +261,22 @@ ax.set_ylim(140)
 
 sns.scatterplot(x='new_cases_per_million', y='new_deaths_per_million', data=covid_curr)
 
+# +
+# Filter new cases and deaths per million, plus continent to colour the plot points
+q = '''
+SELECT new_cases_per_million, new_deaths_per_million, continent 
+FROM covid_data 
+WHERE date='2020-05-19' 
+    AND new_deaths_per_million>0 
+    AND new_cases_per_million>0;
+    '''
+
+covid_curr = pysqldf(q)
+# -
+
 sns.scatterplot(x='new_cases_per_million', y='new_deaths_per_million', data=covid_curr, hue='continent')
 
-covid_pivot = covid_to_date.pivot('date', 'location', ['new_deaths_per_million', 'new_cases_per_million'])
+covid_pivot = covid_to_date.pivot('date', ['new_deaths_per_million', 'new_cases_per_million'])
 
 # +
 fig, ax = figure_elements(20,10)
@@ -284,7 +333,7 @@ fig, ax = figure_elements(30, 20)
 
 sns.boxplot(x='location', y='new_deaths_smoothed_per_million', data=df, ax=ax, )
 
-ax.set_title('COVID-19: New Deaths per European Country')
+ax.set_title('COVID-19: New Deaths - Europe')
 ax.set_ylabel('Deaths per Million (Smoothed)')
 ax.set_xlabel('Country')
 ax.set_xticklabels(ax.get_xticklabels(), rotation=-45, rotation_mode='anchor', ha='left')
